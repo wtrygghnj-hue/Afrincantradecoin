@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+  <title>ATC · African Trade Coin | Dark Edition</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://js.paystack.co/v2/inline.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Space Grotesk', 'Inter', sans-serif;
+      background: radial-gradient(circle at 20% 10%, #0A0E17 0%, #03060C 100%);
+      color: #EFF3F8;
+      padding: clamp(0.8rem, 2vw, 1.5rem);
+      min-height: 100vh;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    :root {
+      --gold: #F5C542;
+      --gold-glow: #F5C54280;
+      --emerald: #2DAA6E;
+      --red: #E0434E;
+      --dark-card: #11151E;
+      --border-dim: #2A313C;
+    }
+    /* Auth modal - dark theme */
+    .auth-overlay {
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(16px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 1rem;
+    }
+    .auth-card {
+      background: #0F1420; border: 1px solid var(--gold);
+      max-width: 460px; width:100%;
+      border-radius: 48px; padding: 2rem;
+      box-shadow: 0 25px 45px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,197,66,0.2);
+    }
+    .auth-logo { text-align: center; margin-bottom: 1.8rem; }
+    .auth-logo h2 { font-weight: 800; font-size: 1.8rem; background: linear-gradient(135deg, #F5C542, #2DAA6E); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .auth-tabs { display: flex; gap: 0.5rem; background: #1A1F2C; border-radius: 60px; padding: 0.2rem; margin-bottom: 1.5rem; }
+    .auth-tab { flex:1; text-align: center; padding: 0.6rem; background: none; border: none; border-radius: 50px; font-weight: 600; cursor: pointer; color: #9BA3B5; transition: 0.2s; }
+    .auth-tab.active { background: var(--gold); color: #0A0E17; box-shadow: 0 2px 8px rgba(245,197,66,0.3); }
+    .input-group { margin-bottom: 1rem; }
+    .input-group label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; color: #9BA3B5; margin-bottom: 5px; display: block; }
+    .input-group input { width: 100%; padding: 0.9rem 1rem; border: 1px solid #2A313C; border-radius: 60px; font-size: 0.9rem; background: #11151E; color: #F5F8FF; transition: 0.2s; }
+    .input-group input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-glow); }
+    .auth-btn { width: 100%; background: var(--emerald); border: none; padding: 0.85rem; border-radius: 60px; font-weight: 700; color: #0A0E17; cursor: pointer; margin-top: 0.5rem; transition: 0.2s; }
+    .auth-btn:hover { background: #239B60; transform: scale(0.98); }
+    .passkey-btn { background: #2A313C; color: var(--gold); margin-top: 0.6rem; border: 1px solid var(--gold); }
+    .divider { text-align: center; margin: 1.2rem 0; font-size: 0.7rem; color: #6C7A8E; position: relative; }
+    .auth-error { background: rgba(224,67,78,0.15); color: #FF8A95; padding: 0.5rem; border-radius: 50px; font-size: 0.75rem; text-align: center; margin-bottom: 1rem; display: none; }
+    /* Dashboard */
+    .exchange-container { display: none; }
+    .exchange-container.visible { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .dashboard-header {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+      background: rgba(17,21,30,0.8); backdrop-filter: blur(12px);
+      padding: 0.8rem 1.8rem; border-radius: 80px; margin-bottom: 2rem;
+      border: 1px solid rgba(245,197,66,0.3);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .user-info { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+    .logout-btn, .passkey-register-btn { background: transparent; border: 1px solid var(--gold); padding: 0.4rem 1rem; border-radius: 60px; cursor: pointer; transition: 0.2s; font-weight: 500; color: var(--gold); }
+    .logout-btn:hover, .passkey-register-btn:hover { background: var(--gold); color: #0A0E17; border-color: var(--gold); }
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr));
+      gap: 1.2rem; margin-bottom: 2rem;
+    }
+    .stat-card { background: #11151E; border-radius: 32px; padding: 1.3rem; border-bottom: 3px solid var(--gold); box-shadow: 0 12px 24px -10px rgba(0,0,0,0.4); transition: transform 0.2s; }
+    .stat-card:hover { transform: translateY(-3px); }
+    .stat-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #9BA3B5; letter-spacing: 1px; margin-bottom: 0.4rem; }
+    .stat-number { font-size: clamp(1.4rem,5vw,2rem); font-weight: 800; background: linear-gradient(135deg, #F5C542, #2DAA6E); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .supply-bar-bg { background: #1F2937; border-radius: 20px; height: 8px; margin-top: 12px; overflow: hidden; }
+    .supply-fill { background: linear-gradient(90deg, var(--gold), var(--emerald)); height: 100%; width: 0%; transition: width 0.5s cubic-bezier(0.2,0.9,0.4,1.1); }
+    /* Chart card */
+    .chart-card { background: #11151E; border-radius: 36px; padding: 1.5rem; margin-bottom: 2rem; border: 1px solid #2A313C; box-shadow: 0 12px 24px -12px rgba(0,0,0,0.4); }
+    .chart-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; margin-bottom: 1.2rem; padding-bottom: 0.5rem; border-bottom: 1px solid #2A313C; }
+    .chart-title { font-weight: 700; font-size: 1rem; color: #F5F8FF; display: flex; align-items: center; gap: 8px; }
+    .chart-badge { background: #1F2937; padding: 0.2rem 0.8rem; border-radius: 60px; font-size: 0.7rem; font-weight: 600; color: var(--gold); }
+    canvas { max-height: 300px; width: 100%; cursor: crosshair; background: #0C1018; border-radius: 24px; padding: 8px; }
+    .trade-panel { background: #11151E; border-radius: 36px; padding: 1.6rem; margin-bottom: 2rem; border: 1px solid #2A313C; box-shadow: 0 12px 24px -10px rgba(0,0,0,0.4); }
+    .live-badge { display: inline-flex; align-items: center; gap: 8px; background: #1F2937; padding: 0.3rem 1.2rem; border-radius: 60px; color: var(--gold); font-weight: 600; font-size: 0.8rem; margin-bottom: 1.2rem; }
+    .form-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
+    .input-group { flex: 2; min-width: 160px; }
+    .input-field { width: 100%; padding: 0.85rem 1rem; border: 1px solid #2A313C; border-radius: 60px; font-size: 0.9rem; background: #0C1018; color: white; }
+    .pay-btn { background: linear-gradient(95deg, var(--emerald), #1A7A4A); border: none; padding: 0.85rem 2rem; border-radius: 60px; font-weight: 700; color: #0A0E17; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 4px 12px rgba(45,170,110,0.3); }
+    .pay-btn:hover { transform: scale(1.02); background: linear-gradient(95deg, #239B60, #145A3A); }
+    .blockchain-section { background: #0C1018; border-radius: 36px; padding: 1.5rem; margin-top: 1rem; color: #EFF3F8; border-left: 6px solid var(--gold); box-shadow: 0 12px 24px rgba(0,0,0,0.3); }
+    .blocks-container { display: flex; overflow-x: auto; gap: 1.2rem; padding-bottom: 0.8rem; }
+    .block-card { background: #1A1F2C; border-left: 4px solid var(--gold); border-radius: 24px; min-width: 280px; padding: 1rem; font-family: monospace; font-size: 0.7rem; }
+    .verify-btn { background: #2A313C; border: none; padding: 0.3rem 1rem; border-radius: 40px; color: var(--gold); cursor: pointer; font-weight: 500; }
+    footer { text-align: center; margin-top: 2rem; font-size: 0.7rem; color: #6C7A8E; }
+    /* Admin modal (dark) */
+    .admin-modal {
+      position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9);
+      backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center;
+      z-index: 2000; visibility: hidden; opacity: 0; transition: 0.2s;
+    }
+    .admin-modal.open { visibility: visible; opacity: 1; }
+    .admin-card { background: #0F1420; color: #EFF3F8; max-width: 900px; width:100%; max-height: 85vh; border-radius: 48px; padding: 1.5rem; overflow-y: auto; border-left: 6px solid var(--gold); }
+    .admin-card h3, .admin-card h4 { color: var(--gold); margin-bottom: 1rem; }
+    .admin-table { width:100%; border-collapse: collapse; font-size:0.8rem; }
+    .admin-table th, .admin-table td { padding:0.5rem; border-bottom:1px solid #2A313C; text-align:left; }
+    .admin-btn { background: var(--gold); color:#0A0E17; border:none; padding:0.2rem 0.8rem; border-radius:30px; cursor:pointer; }
+    .close-admin { float:right; background:none; border:none; color:var(--gold); font-size:1.8rem; cursor:pointer; }
+    @media (max-width: 640px) { body { padding: 0.8rem; } .form-row { flex-direction: column; } .pay-btn { justify-content: center; } .stats-grid { gap: 0.8rem; } }
+  </style>
+</head>
+<body>
+
+<!-- Auth Modal -->
+<div id="authOverlay" class="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo"><h2><i class="fas fa-globe-africa"></i> ATC · African Trade Coin</h2><p style="font-size:0.7rem;">10M cap · Live forex · Dark theme</p></div>
+    <div class="auth-tabs"><button class="auth-tab active" id="loginTab">Sign in</button><button class="auth-tab" id="signupTab">Create account</button></div>
+    <div id="authError" class="auth-error"></div>
+    <div id="loginForm">
+      <div class="input-group"><label>Email</label><input type="email" id="loginEmail" placeholder="hello@africa.com"></div>
+      <div class="input-group"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••"></div>
+      <button class="auth-btn" id="loginBtn"><i class="fas fa-sign-in-alt"></i> Sign in</button>
+      <div class="divider">or</div>
+      <button class="auth-btn passkey-btn" id="passkeyLoginBtn"><i class="fas fa-fingerprint"></i> Sign in with Passkey</button>
+    </div>
+    <div id="signupForm" style="display:none;">
+      <div class="input-group"><label>Email</label><input type="email" id="signupEmail" placeholder="hello@africa.com"></div>
+      <div class="input-group"><label>Password (min 6)</label><input type="password" id="signupPassword" placeholder="••••••"></div>
+      <div class="input-group"><label>Confirm password</label><input type="password" id="signupConfirm" placeholder="••••••"></div>
+      <button class="auth-btn" id="signupBtn"><i class="fas fa-user-plus"></i> Create account</button>
+      <div class="divider">After signup, register a passkey in dashboard</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Exchange (10M cap) -->
+<div id="exchangeApp" class="exchange-container">
+  <div class="dashboard-header">
+    <div><h1 style="font-size:1.5rem; font-weight:800;"><i class="fas fa-chart-line"></i> ATC Exchange</h1></div>
+    <div class="user-info">
+      <span id="userEmailDisplay"></span>
+      <button id="registerPasskeyBtn" class="passkey-register-btn"><i class="fas fa-fingerprint"></i> Passkey</button>
+      <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Live ATC / GHS</div><div class="stat-number" id="livePriceDisplay">₵0.0000</div><div id="priceChangeIndicator" style="font-size:0.65rem;"></div></div>
+    <div class="stat-card"><div class="stat-label">My ATC balance</div><div class="stat-number" id="userBalance">0.00</div></div>
+    <div class="stat-card"><div class="stat-label">Remaining supply</div><div class="stat-number" id="remainingSupply">10,000,000</div><div class="supply-bar-bg"><div class="supply-fill" id="supplyFill"></div></div></div>
+  </div>
+
+  <!-- CONTINUOUS LINE GRAPH dark -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title"><i class="fas fa-chart-line" style="color: var(--gold);"></i> ATC / GHS Continuous Feed</div>
+      <div class="chart-badge">Real-time every 60s</div>
+    </div>
+    <canvas id="priceChart" height="280"></canvas>
+    <div style="display: flex; justify-content: center; gap: 1.5rem; margin-top: 0.8rem; font-size: 0.65rem; color: #7E8AA2;">
+      <span><i class="fas fa-chart-simple"></i> Rolling 80‑point history</span>
+      <span><i class="fas fa-arrow-trend-up"></i> 1 ATC = 0.01 USD base</span>
+    </div>
+  </div>
+
+  <div class="trade-panel">
+    <div class="live-badge"><i class="fas fa-circle" style="font-size:0.5rem; color: #6BFF8A;"></i> Current rate: <span id="currentPriceSpan">₵0.0000</span> / ATC</div>
+    <div class="form-row">
+      <div class="input-group"><label>Amount (GHS)</label><input type="number" id="ghsAmount" class="input-field" placeholder="e.g., 50" step="any" min="5"></div>
+      <div class="input-group"><label>You receive (ATC)</label><input type="text" id="atcReceive" class="input-field" readonly placeholder="0.0000 ATC"></div>
+      <button class="pay-btn" id="buyNowBtn"><i class="fas fa-hand-holding-usd"></i> Pay</button>
+    </div>
+    <div class="note" style="font-size:0.7rem; margin-top:1rem;"><i class="fas fa-leaf"></i> SHA‑256 block per transaction · 10M hard cap · Paystack secure</div>
+  </div>
+
+  <div class="blockchain-section">
+    <div style="display:flex; justify-content:space-between; flex-wrap:wrap;"><h3><i class="fas fa-cube"></i> Immutable Ledger</h3><button class="verify-btn" id="verifyChainBtn">Verify integrity</button></div>
+    <div id="blocksContainer" class="blocks-container"><div>⚡ Mining genesis...</div></div>
+    <div><h4 style="margin-top:1rem;">Recent purchases</h4><div id="recentHistoryList" class="history-list"></div></div>
+  </div>
+  <footer>🌍 Pan‑African · SHA‑256 blockchain · Live USD/GHS · Dark mode</footer>
+</div>
+
+<!-- Admin Modal (invisible) -->
+<div id="adminModal" class="admin-modal">
+  <div class="admin-card">
+    <button class="close-admin" id="closeAdminBtn">&times;</button>
+    <h3><i class="fas fa-user-secret"></i> Admin Dashboard</h3>
+    <div style="margin-bottom:1rem;"><label>Admin password:</label><input type="password" id="adminPasswordInput" style="background:#2A313C; border:1px solid var(--gold); padding:0.3rem; border-radius:30px;"><button id="adminLoginBtn" class="admin-btn">Unlock</button></div>
+    <div id="adminContent" style="display:none;">
+      <h4>Statistics</h4>
+      <p>Total ATC Minted: <span id="adminTotalMinted">0</span> / 10,000,000</p>
+      <p>Total Revenue (GHS): ₵<span id="adminTotalRevenue">0.00</span></p>
+      <p>Current ATC Price: ₵<span id="adminCurrentPrice">0.0000</span></p>
+      <div><label>Base ATC Value (USD): </label><input type="number" id="adminAtcUsdValue" step="0.0001" value="0.01" style="width:100px;"><button id="updateBasePriceBtn" class="admin-btn">Update</button></div>
+      <h4>User Balances</h4>
+      <div style="overflow-x:auto;"><table class="admin-table" id="adminUserTable"><thead><tr><th>Email</th><th>ATC Balance</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+      <h4>Last 10 Blockchain Txs</h4>
+      <div id="adminTxList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ======================== AUTH (email + Passkey) ========================
+  const USERS_KEY = 'atc_users';
+  const PASSKEYS_KEY = 'atc_passkeys';
+  const SESSION_KEY = 'atc_current_user';
+  
+  function randomBase64URL(len=32) { const b = crypto.getRandomValues(new Uint8Array(len)); return btoa(String.fromCharCode(...b)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,''); }
+  function getUsers() { const raw=localStorage.getItem(USERS_KEY); return raw?JSON.parse(raw):{}; }
+  function saveUsers(u) { localStorage.setItem(USERS_KEY,JSON.stringify(u)); }
+  function getPasskeys() { const raw=localStorage.getItem(PASSKEYS_KEY); return raw?JSON.parse(raw):[]; }
+  function savePasskeys(p) { localStorage.setItem(PASSKEYS_KEY,JSON.stringify(p)); }
+  function hashPassword(pw) { let h=0; for(let i=0;i<pw.length;i++){ h=((h<<5)-h)+pw.charCodeAt(i); h|=0; } return 'hash_'+Math.abs(h).toString(16); }
+  function signup(email,password,confirm) {
+    const users=getUsers();
+    if(!email||!password) return {success:false,error:"Email and password required"};
+    if(password!==confirm) return {success:false,error:"Passwords do not match"};
+    if(password.length<6) return {success:false,error:"Password must be ≥6 characters"};
+    if(users[email]) return {success:false,error:"Email already exists"};
+    users[email]={passwordHash:hashPassword(password),balance:0};
+    saveUsers(users);
+    return {success:true};
+  }
+  function login(email,password) {
+    const users=getUsers();
+    if(!users[email]) return {success:false,error:"Account not found"};
+    if(users[email].passwordHash!==hashPassword(password)) return {success:false,error:"Incorrect password"};
+    sessionStorage.setItem(SESSION_KEY,email);
+    return {success:true,email};
+  }
+  function getCurrentUser() { return sessionStorage.getItem(SESSION_KEY); }
+  function logout() { sessionStorage.removeItem(SESSION_KEY); location.reload(); }
+  function getUserBalance(email) { const u=getUsers(); return u[email]?.balance||0; }
+  function setUserBalance(email,bal) { const u=getUsers(); if(u[email]){ u[email].balance=bal; saveUsers(u); } }
+  function getAllUsers() { return getUsers(); }
+  
+  // Passkey registration & auth
+  async function registerPasskey(email) {
+    if (!window.PublicKeyCredential) { alert("Passkeys not supported in this browser"); return false; }
+    const challenge = randomBase64URL(32);
+    const userId = crypto.getRandomValues(new Uint8Array(16));
+    const publicKeyCredentialCreationOptions = {
+      challenge: new TextEncoder().encode(challenge),
+      rp: { name: "ATC Exchange", id: window.location.hostname },
+      user: { id: userId, name: email, displayName: email },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", requireResidentKey: true, userVerification: "required" },
+      timeout: 60000,
+    };
+    try {
+      const credential = await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
+      const credId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+      const pubKey = btoa(String.fromCharCode(...new Uint8Array(credential.response.getPublicKey())));
+      const passkeys = getPasskeys();
+      const filtered = passkeys.filter(p => p.email !== email);
+      filtered.push({ email, credentialId: credId, publicKey: pubKey, userId: btoa(String.fromCharCode(...userId)) });
+      savePasskeys(filtered);
+      alert("✅ Passkey registered! Next time use biometric sign‑in.");
+      return true;
+    } catch (err) { alert("Passkey registration failed: " + err.message); return false; }
+  }
+  async function authenticateWithPasskey() {
+    if (!window.PublicKeyCredential) { alert("Passkeys not supported"); return null; }
+    const passkeys = getPasskeys();
+    if (passkeys.length === 0) { alert("No passkeys found. Sign in with password first and register a passkey."); return null; }
+    const challenge = randomBase64URL(32);
+    const allowCredentials = passkeys.map(p => ({ id: Uint8Array.from(atob(p.credentialId), c=>c.charCodeAt(0)), type: "public-key" }));
+    const publicKeyCredentialRequestOptions = {
+      challenge: new TextEncoder().encode(challenge),
+      allowCredentials: allowCredentials,
+      timeout: 60000,
+      userVerification: "required",
+      rpId: window.location.hostname,
+    };
+    try {
+      const assertion = await navigator.credentials.get({ publicKey: publicKeyCredentialRequestOptions });
+      const credId = btoa(String.fromCharCode(...new Uint8Array(assertion.rawId)));
+      const matched = passkeys.find(p => p.credentialId === credId);
+      if (matched) return matched.email;
+      else { alert("Passkey not recognized"); return null; }
+    } catch (err) { alert("Authentication cancelled"); return null; }
+  }
+  
+  // ======================== SHA‑256 BLOCKCHAIN (10M cap) ========================
+  const DIFFICULTY = 2;
+  async function sha256(msg) {
+    const enc = new TextEncoder();
+    const buf = await crypto.subtle.digest('SHA-256', enc.encode(msg));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  class Block {
+    constructor(idx,ts,tx,prevHash='',nonce=0) { this.index=idx; this.timestamp=ts; this.transactions=tx; this.previousHash=prevHash; this.nonce=nonce; this.hash=''; }
+    async calcHash() { return await sha256(this.index+this.timestamp+JSON.stringify(this.transactions)+this.previousHash+this.nonce); }
+    async mine() { const target='0'.repeat(DIFFICULTY); let h=await this.calcHash(); while(!h.startsWith(target)){ this.nonce++; h=await this.calcHash(); } this.hash=h; return h; }
+  }
+  class Blockchain { constructor(){ this.chain=[]; }
+    async genesis() { const g=new Block(0,new Date().toISOString(),{type:'GENESIS',amountAtc:0,amountGhs:0,rate:0,totalMintedAfter:0,userEmail:'system'},'0'); await g.mine(); this.chain.push(g); return g; }
+    async addBlock(tx) { const prev=this.chain[this.chain.length-1]; const b=new Block(this.chain.length,new Date().toISOString(),tx,prev.hash); await b.mine(); this.chain.push(b); return b; }
+    async validate() { for(let i=1;i<this.chain.length;i++){ if(this.chain[i].previousHash!==this.chain[i-1].hash) return false; const recalc=await this.chain[i].calcHash(); if(recalc!==this.chain[i].hash) return false; if(!this.chain[i].hash.startsWith('0'.repeat(DIFFICULTY))) return false; } return true; }
+  }
+  let blockchain=new Blockchain();
+  let totalMinted=0;
+  const TOTAL_CAP = 10_000_000;
+  let currentPrice=0.048;
+  let priceHistory=[];
+  let chart=null;
+  let priceInterval=null;
+  let currentUserEmail=null;
+  
+  // DOM refs
+  const exchangeDiv=document.getElementById('exchangeApp');
+  const authOverlay=document.getElementById('authOverlay');
+  const userEmailSpan=document.getElementById('userEmailDisplay');
+  const userBalanceSpan=document.getElementById('userBalance');
+  const remainingSpan=document.getElementById('remainingSupply');
+  const supplyFill=document.getElementById('supplyFill');
+  const ghsInput=document.getElementById('ghsAmount');
+  const atcReceive=document.getElementById('atcReceive');
+  const buyBtn=document.getElementById('buyNowBtn');
+  const verifyBtn=document.getElementById('verifyChainBtn');
+  const blocksContainer=document.getElementById('blocksContainer');
+  const historyList=document.getElementById('recentHistoryList');
+  const livePriceSpan=document.getElementById('livePriceDisplay');
+  const priceChangeSpan=document.getElementById('priceChangeIndicator');
+  const currentPriceSpan=document.getElementById('currentPriceSpan');
+  const registerPasskeyBtn = document.getElementById('registerPasskeyBtn');
+  const passkeyLoginBtn = document.getElementById('passkeyLoginBtn');
+  
+  async function loadBlockchain() {
+    const saved=localStorage.getItem('atc_global_blockchain');
+    if(saved){
+      const data=JSON.parse(saved);
+      blockchain=new Blockchain();
+      for(const d of data){
+        const b=new Block(d.index,d.timestamp,d.transactions,d.previousHash,d.nonce);
+        b.hash=d.hash;
+        blockchain.chain.push(b);
+      }
+      if(blockchain.chain.length===0) await blockchain.genesis();
+    } else { await blockchain.genesis(); }
+    totalMinted=0;
+    for(const b of blockchain.chain) if(b.transactions.type==='BUY') totalMinted+=b.transactions.amountAtc;
+    if(totalMinted>TOTAL_CAP) totalMinted=TOTAL_CAP;
+    saveBlockchain();
+    renderBlockchain();
+    updateSupplyUI();
+  }
+  function saveBlockchain() {
+    const data=blockchain.chain.map(b=>({index:b.index,timestamp:b.timestamp,transactions:b.transactions,previousHash:b.previousHash,nonce:b.nonce,hash:b.hash}));
+    localStorage.setItem('atc_global_blockchain',JSON.stringify(data));
+  }
+  async function recordPurchase(ghsAmount,atcAmount,rate,userEmail){
+    if(atcAmount>(TOTAL_CAP-totalMinted)) return false;
+    totalMinted+=atcAmount;
+    const newBalance=getUserBalance(userEmail)+atcAmount;
+    setUserBalance(userEmail,newBalance);
+    const tx={type:'BUY',amountAtc:atcAmount,amountGhs:ghsAmount,rate:rate,userEmail:userEmail,totalMintedAfter:totalMinted,timestamp:new Date().toISOString()};
+    await blockchain.addBlock(tx);
+    saveBlockchain();
+    updateUIForUser();
+    renderBlockchain();
+    return true;
+  }
+  function updateUIForUser() {
+    if(!currentUserEmail) return;
+    const bal=getUserBalance(currentUserEmail);
+    userBalanceSpan.innerText=bal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4});
+    const remaining=TOTAL_CAP-totalMinted;
+    remainingSpan.innerText=remaining.toLocaleString();
+    supplyFill.style.width=((totalMinted/TOTAL_CAP)*100)+'%';
+  }
+  function updatePreview() {
+    let ghs=parseFloat(ghsInput.value);
+    if(isNaN(ghs)||ghs<=0){ atcReceive.value=''; return; }
+    atcReceive.value=(ghs/currentPrice).toFixed(4)+' ATC';
+  }
+  async function renderBlockchain() {
+    if(!blockchain.chain.length){ blocksContainer.innerHTML='<div>⛏️ Loading ledger...</div>'; return; }
+    blocksContainer.innerHTML=blockchain.chain.slice(-12).reverse().map(b=>{
+      const tx=b.transactions;
+      let desc=tx.type==='GENESIS'?'🌍 GENESIS · Sankofa':`🟢 ${tx.amountAtc?.toFixed(2)} ATC · ${tx.userEmail?.slice(0,12)}`;
+      return `<div class="block-card"><div><strong>#${b.index}</strong> ${new Date(b.timestamp).toLocaleTimeString()}</div>
+      <div style="font-family:monospace; font-size:0.6rem;">${b.hash.substring(0,20)}...</div><div>${desc}</div></div>`;
+    }).join('');
+    const buys=blockchain.chain.filter(b=>b.transactions.type==='BUY').slice(-12).reverse();
+    historyList.innerHTML=buys.map(b=>`<div style="padding:4px 0; border-bottom:1px solid #2A313C;">${b.transactions.amountAtc.toFixed(2)} ATC · ${b.transactions.userEmail?.slice(0,14)}</div>`).join('');
+  }
+  function updateSupplyUI() { const rem=TOTAL_CAP-totalMinted; remainingSpan.innerText=rem.toLocaleString(); supplyFill.style.width=((totalMinted/TOTAL_CAP)*100)+'%'; }
+  
+  // REAL PRICE + CONTINUOUS LINE GRAPH
+  let ATC_USD_VALUE = 0.01;
+  async function fetchRealPrice() {
+    try {
+      const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+      if (!response.ok) throw new Error();
+      const data = await response.json();
+      const ghsPerUsd = data.rates.GHS;
+      if (ghsPerUsd) {
+        const newPrice = ATC_USD_VALUE * ghsPerUsd;
+        currentPrice = parseFloat(newPrice.toFixed(6));
+        livePriceSpan.innerText = `₵${currentPrice.toFixed(6)}`;
+        currentPriceSpan.innerText = `₵${currentPrice.toFixed(6)}`;
+        priceChangeSpan.innerHTML = 'real FX rate · live';
+        priceChangeSpan.style.color = '#2DAA6E';
+        updatePreview();
+        localStorage.setItem('atc_currentPrice', currentPrice);
+        priceHistory.push({ price: currentPrice, time: new Date() });
+        if (priceHistory.length > 80) priceHistory.shift();
+        if (chart) {
+          chart.data.datasets[0].data = priceHistory.map(p => p.price);
+          chart.update('none');
+        }
+      }
+    } catch(e) { priceChangeSpan.innerHTML = 'offline · cached'; priceChangeSpan.style.color = '#E0434E'; }
+  }
+  function startPriceSimulation() { if(priceInterval) clearInterval(priceInterval); fetchRealPrice(); priceInterval = setInterval(fetchRealPrice, 60000); }
+  
+  function initChart() {
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+    gradient.addColorStop(0, 'rgba(245,197,66,0.25)');
+    gradient.addColorStop(1, 'rgba(245,197,66,0.01)');
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [{ label: '1 ATC = (GHS)', data: [], borderColor: '#F5C542', backgroundColor: gradient, borderWidth: 2.5, pointRadius: 1.5, pointHoverRadius: 5, pointBackgroundColor: '#F5C542', fill: true, tension: 0.25 }] },
+      options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { backgroundColor: '#11151E', titleColor: '#F5C542', bodyColor: '#EFF3F8', callbacks: { label: (ctx) => `₵${ctx.raw.toFixed(6)}` } }, legend: { position: 'top', labels: { color: '#9BA3B5' } } }, scales: { y: { title: { display: true, text: 'Price (GHS)', color: '#9BA3B5' }, ticks: { color: '#C0C8DF', callback: (val) => '₵' + val.toFixed(4) }, grid: { color: '#2A313C' } }, x: { title: { display: true, text: 'Time (last 80 updates)', color: '#9BA3B5' }, ticks: { color: '#C0C8DF' }, grid: { display: false } } } }
+    });
+    for (let i = 0; i < 20; i++) priceHistory.push({ price: currentPrice, time: new Date() });
+    chart.data.datasets[0].data = priceHistory.map(p => p.price);
+    chart.update();
+  }
+  
+  // ======================== PAYSTACK WITH NEW KEY ========================
+  const PAYSTACK_KEY = "pk_live_7daf3e373d8ce026afe514d704f04f9fb6cb3a0f";
+  async function initiatePayment() {
+    if(!currentUserEmail){ alert('Session expired'); logout(); return; }
+    let ghs=parseFloat(ghsInput.value);
+    if(isNaN(ghs)||ghs<5){ alert('Minimum amount: ₵5'); return; }
+    const atcAmount=ghs/currentPrice;
+    if(atcAmount>(TOTAL_CAP-totalMinted)){ alert(`Only ${(TOTAL_CAP-totalMinted).toLocaleString()} ATC left.`); return; }
+    let email=prompt('Enter email for receipt:', currentUserEmail);
+    if(!email||!email.includes('@')){ alert('Valid email required'); return; }
+    const ref='ATC-'+Date.now()+'-'+Math.random().toString(36).substr(2,6);
+    const rateSnap=currentPrice;
+    const handler=PaystackPop.setup({
+      key: PAYSTACK_KEY, email: email, amount: Math.round(ghs*100), currency: 'GHS', ref: ref,
+      onClose: ()=>alert('Payment closed.'),
+      callback: async (resp)=>{
+        if(resp.status==='success'){
+          const success=await recordPurchase(ghs, atcAmount, rateSnap, currentUserEmail);
+          if(success){ alert(`✅ ${atcAmount.toFixed(4)} ATC added!`); ghsInput.value=''; atcReceive.value=''; updateUIForUser(); }
+          else alert('Supply cap reached');
+        } else alert('Payment failed');
+      }
+    });
+    handler.openIframe();
+  }
+  
+  // ======================== INVISIBLE ADMIN (Ctrl+Shift+A) ========================
+  const adminModal = document.getElementById('adminModal');
+  const closeAdminBtn = document.getElementById('closeAdminBtn');
+  const adminLoginBtn = document.getElementById('adminLoginBtn');
+  const adminPasswordInput = document.getElementById('adminPasswordInput');
+  const adminContent = document.getElementById('adminContent');
+  const ADMIN_PASSWORD = "N@n@kwaku";
+  window.addEventListener('keydown', (e) => { if (e.ctrlKey && e.shiftKey && e.key === 'A') { e.preventDefault(); adminModal.classList.add('open'); adminContent.style.display = 'none'; adminPasswordInput.value = ''; } });
+  closeAdminBtn.addEventListener('click', () => adminModal.classList.remove('open'));
+  adminModal.addEventListener('click', (e) => { if(e.target === adminModal) adminModal.classList.remove('open'); });
+  function refreshAdminData() {
+    document.getElementById('adminTotalMinted').innerText = totalMinted.toLocaleString();
+    let rev=0; for(const b of blockchain.chain) if(b.transactions.type==='BUY') rev+=b.transactions.amountGhs;
+    document.getElementById('adminTotalRevenue').innerText = rev.toFixed(2);
+    document.getElementById('adminCurrentPrice').innerText = currentPrice.toFixed(6);
+    document.getElementById('adminAtcUsdValue').value = ATC_USD_VALUE;
+    const users = getAllUsers(); const tbody = document.querySelector('#adminUserTable tbody'); tbody.innerHTML = '';
+    for (const [email, data] of Object.entries(users)) {
+      const row = tbody.insertRow(); row.insertCell(0).innerText = email; row.insertCell(1).innerText = data.balance.toFixed(4);
+      const actionCell = row.insertCell(2); const resetBtn = document.createElement('button'); resetBtn.innerText = 'Reset'; resetBtn.className = 'admin-btn';
+      resetBtn.onclick = () => { if(confirm(`Reset ${email}?`)){ setUserBalance(email,0); if(currentUserEmail===email) updateUIForUser(); refreshAdminData(); } };
+      actionCell.appendChild(resetBtn);
+    }
+    const buys = blockchain.chain.filter(b=>b.transactions.type==='BUY').slice(-10).reverse();
+    document.getElementById('adminTxList').innerHTML = buys.map(b=>`<div style="padding:2px 0;">${new Date(b.timestamp).toLocaleString()} — ${b.transactions.userEmail} bought ${b.transactions.amountAtc.toFixed(2)} ATC for ₵${b.transactions.amountGhs.toFixed(2)}</div>`).join('');
+  }
+  adminLoginBtn.addEventListener('click', () => { if(adminPasswordInput.value === ADMIN_PASSWORD){ adminContent.style.display='block'; refreshAdminData(); } else alert('Wrong password'); });
+  document.getElementById('updateBasePriceBtn').addEventListener('click', () => { const v=parseFloat(document.getElementById('adminAtcUsdValue').value); if(!isNaN(v)&&v>0){ ATC_USD_VALUE=v; fetchRealPrice(); alert('Base price updated'); } });
+  
+  // ======================== UI & EVENT HANDLERS ========================
+  function showAuth(){ authOverlay.style.display='flex'; exchangeDiv.classList.remove('visible'); }
+  function hideAuthAndStart(email){
+    currentUserEmail=email;
+    authOverlay.style.display='none';
+    exchangeDiv.classList.add('visible');
+    userEmailSpan.innerText=email;
+    loadBlockchain().then(()=>{ updateUIForUser(); initChart(); startPriceSimulation(); updatePreview(); });
+  }
+  document.getElementById('loginTab').addEventListener('click',()=>{
+    document.getElementById('loginForm').style.display='block'; document.getElementById('signupForm').style.display='none';
+    document.getElementById('loginTab').classList.add('active'); document.getElementById('signupTab').classList.remove('active');
+  });
+  document.getElementById('signupTab').addEventListener('click',()=>{
+    document.getElementById('loginForm').style.display='none'; document.getElementById('signupForm').style.display='block';
+    document.getElementById('signupTab').classList.add('active'); document.getElementById('loginTab').classList.remove('active');
+  });
+  document.getElementById('loginBtn').addEventListener('click',()=>{
+    const email=document.getElementById('loginEmail').value.trim();
+    const pw=document.getElementById('loginPassword').value;
+    const res=login(email,pw);
+    if(res.success) hideAuthAndStart(email);
+    else { const errDiv=document.getElementById('authError'); errDiv.innerText=res.error; errDiv.style.display='block'; setTimeout(()=>errDiv.style.display='none',3000); }
+  });
+  document.getElementById('signupBtn').addEventListener('click',()=>{
+    const email=document.getElementById('signupEmail').value.trim();
+    const pw=document.getElementById('signupPassword').value;
+    const conf=document.getElementById('signupConfirm').value;
+    const res=signup(email,pw,conf);
+    if(res.success){ alert('Account created! Please sign in.'); document.getElementById('loginTab').click(); document.getElementById('loginEmail').value=email; document.getElementById('loginPassword').value=''; }
+    else { const errDiv=document.getElementById('authError'); errDiv.innerText=res.error; errDiv.style.display='block'; setTimeout(()=>errDiv.style.display='none',3000); }
+  });
+  passkeyLoginBtn.addEventListener('click', async () => { const email = await authenticateWithPasskey(); if(email) hideAuthAndStart(email); });
+  registerPasskeyBtn.addEventListener('click', async () => { if(currentUserEmail) await registerPasskey(currentUserEmail); else alert('Please sign in first'); });
+  document.getElementById('logoutBtn').addEventListener('click',logout);
+  buyBtn.addEventListener('click',initiatePayment);
+  verifyBtn.addEventListener('click',async()=>{ alert((await blockchain.validate())?'✅ Blockchain validity confirmed':'❌ Chain corrupted'); });
+  ghsInput.addEventListener('input',updatePreview);
+  
+  const existing=getCurrentUser();
+  if(existing) hideAuthAndStart(existing);
+  else showAuth();
+</script>
+</body>
+</html>
